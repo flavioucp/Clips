@@ -1,0 +1,104 @@
+# docker-compose.yml para desarrollo local
+version: '3.8'
+
+services:
+  # Base de datos PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: clipshare-db
+    environment:
+      POSTGRES_USER: clipshare
+      POSTGRES_PASSWORD: clipshare_password
+      POSTGRES_DB: clipshare
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clipshare -d clipshare"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - clipshare-network
+
+  # pgAdmin para gestionar BD
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: clipshare-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@clipshare.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    networks:
+      - clipshare-network
+
+  # Minio para S3 compatible (desarrollo local)
+  minio:
+    image: minio/minio:latest
+    container_name: clipshare-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001" # MinIO Console
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    volumes:
+      - minio_data:/data
+    command: server /data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+    networks:
+      - clipshare-network
+
+  # Aplicación Next.js
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: clipshare-app
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://clipshare:clipshare_password@postgres:5432/clipshare
+      JWT_SECRET: dev-secret-key-min-32-chars-please
+      JWT_REFRESH_SECRET: dev-refresh-secret-key-min-32-chars
+      NODE_ENV: development
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: minioadmin
+      AWS_SECRET_ACCESS_KEY: minioadmin
+      AWS_S3_BUCKET: clipshare-bucket
+      AWS_S3_ENDPOINT: http://minio:9000
+      AWS_S3_URL: http://localhost:9000/clipshare-bucket
+      NEXT_PUBLIC_API_URL: http://localhost:3000
+      NEXT_PUBLIC_S3_URL: http://localhost:9000/clipshare-bucket
+      LOG_LEVEL: info
+      SENDGRID_API_KEY: SG.fake-key-for-dev
+      SENDGRID_FROM_EMAIL: noreply@clipshare.local
+      CORS_ALLOWED_ORIGINS: http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    volumes:
+      - .:/app
+      - /app/node_modules
+    networks:
+      - clipshare-network
+    command: npm run dev
+
+networks:
+  clipshare-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  minio_data:

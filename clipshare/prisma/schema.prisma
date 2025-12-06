@@ -1,0 +1,202 @@
+// Prisma Schema para ClipShare
+// Genera los modelos para User, Clip, Comment, Like, Report, etc.
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Usuario del sistema
+model User {
+  id                    String      @id @default(cuid())
+  email                 String      @unique
+  name                  String
+  password              String      // bcrypted
+  emailVerified         DateTime?
+  emailVerificationToken String?
+  emailVerificationTokenExpiresAt DateTime?
+  passwordResetToken    String?
+  passwordResetTokenExpiresAt DateTime?
+  avatarUrl             String?
+  bio                   String?
+  role                  UserRole    @default(USER)
+  accountLockedUntil    DateTime?   // Para lockout tras X intentos fallidos
+  failedLoginAttempts   Int         @default(0)
+
+  // Relaciones
+  clips                 Clip[]
+  comments              Comment[]
+  likes                 Like[]
+  reports               Report[]
+  refreshTokens         RefreshToken[]
+
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  @@index([email])
+  @@map("users")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+// Clip de video/gif
+model Clip {
+  id                    String      @id @default(cuid())
+  userId                String
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title                 String
+  description           String?
+  fileUrl               String      // URL en S3
+  thumbnailUrl          String?     // URL de thumbnail
+  duration              Int?        // duración en segundos
+  fileSize              Int         // tamaño en bytes
+  mimeType              String      // video/mp4, video/webm, image/gif
+  privacy               Privacy     @default(PUBLIC)
+
+  viewsCount            Int         @default(0)
+  viewIpAddresses       String[]    @default([])  // Para anti-fraud (últimas IPs que lo vieron)
+
+  // Relaciones
+  tags                  ClipTag[]
+  comments              Comment[]
+  likes                 Like[]
+  reports               Report[]
+
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([privacy])
+  @@map("clips")
+}
+
+enum Privacy {
+  PUBLIC
+  PRIVATE
+}
+
+// Tags para clips
+model Tag {
+  id                    String      @id @default(cuid())
+  name                  String      @unique @db.VarChar(50)
+
+  clips                 ClipTag[]
+  createdAt             DateTime    @default(now())
+
+  @@map("tags")
+}
+
+// Relación muchos-a-muchos entre Clip y Tag
+model ClipTag {
+  id                    String      @id @default(cuid())
+  clipId                String
+  clip                  Clip        @relation(fields: [clipId], references: [id], onDelete: Cascade)
+  tagId                 String
+  tag                   Tag         @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  createdAt             DateTime    @default(now())
+
+  @@unique([clipId, tagId])
+  @@index([tagId])
+  @@map("clip_tags")
+}
+
+// Comentarios (con soporte para threads hasta 2 niveles)
+model Comment {
+  id                    String      @id @default(cuid())
+  clipId                String
+  clip                  Clip        @relation(fields: [clipId], references: [id], onDelete: Cascade)
+  userId                String
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  content               String      @db.Text
+  parentId              String?     // Para comentarios anidados (respuestas)
+  parent                Comment?    @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies               Comment[]   @relation("CommentReplies")
+
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  @@index([clipId])
+  @@index([userId])
+  @@index([parentId])
+  @@map("comments")
+}
+
+// Likes en clips
+model Like {
+  id                    String      @id @default(cuid())
+  clipId                String
+  clip                  Clip        @relation(fields: [clipId], references: [id], onDelete: Cascade)
+  userId                String
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt             DateTime    @default(now())
+
+  @@unique([clipId, userId])
+  @@index([userId])
+  @@map("likes")
+}
+
+// Reportes de clips
+model Report {
+  id                    String      @id @default(cuid())
+  clipId                String
+  clip                  Clip        @relation(fields: [clipId], references: [id], onDelete: Cascade)
+  userId                String
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  reason                ReportReason
+  description           String?     @db.Text
+  status                ReportStatus @default(PENDING)
+  adminNotes            String?     @db.Text
+
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  @@index([clipId])
+  @@index([status])
+  @@map("reports")
+}
+
+enum ReportReason {
+  INAPPROPRIATE_CONTENT
+  SPAM
+  COPYRIGHT_VIOLATION
+  HARASSMENT
+  HATE_SPEECH
+  OTHER
+}
+
+enum ReportStatus {
+  PENDING
+  REVIEWED
+  DISMISSED
+  ACTIONED
+}
+
+// Tokens de refresh (para invalidar sesiones)
+model RefreshToken {
+  id                    String      @id @default(cuid())
+  userId                String
+  user                  User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  token                 String      @unique
+  expiresAt             DateTime
+  isRevoked             Boolean     @default(false)
+
+  createdAt             DateTime    @default(now())
+
+  @@index([userId])
+  @@index([token])
+  @@map("refresh_tokens")
+}

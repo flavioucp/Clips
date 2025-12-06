@@ -1,0 +1,12 @@
+<!-- robots.txt para SEO -->
+User-agent: *
+Allow: /
+Disallow: /admin/
+Disallow: /api/
+Disallow: /auth/
+Disallow: /*.json$
+
+Sitemap: https://clipshare.com/sitemap.xml
+
+# Delays (Google ignora esto, pero útil para otros bots)
+Crawl-delay: 0

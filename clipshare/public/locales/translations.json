@@ -1,0 +1,70 @@
+{
+  "en": {
+    "home": {
+      "title": "ClipShare - Share Your Moments",
+      "description": "Share video clips and GIFs with the world",
+      "getStarted": "Get Started",
+      "login": "Login",
+      "popularClips": "Popular Clips",
+      "views": "Views",
+      "likes": "Likes",
+      "comments": "Comments"
+    },
+    "auth": {
+      "register": "Create Account",
+      "login": "Login",
+      "logout": "Logout",
+      "email": "Email",
+      "password": "Password",
+      "name": "Name",
+      "loginSuccess": "Login successful!",
+      "registerSuccess": "Account created successfully!",
+      "invalidCredentials": "Invalid email or password",
+      "passwordPolicy": "Min 8 chars, uppercase, lowercase, number, special char"
+    },
+    "upload": {
+      "title": "Upload Your Clip",
+      "selectFile": "Select file (max 200MB)",
+      "uploadProgress": "Upload progress",
+      "uploading": "Uploading...",
+      "upload": "Upload Clip",
+      "privacy": "Privacy",
+      "public": "Public",
+      "private": "Private"
+    }
+  },
+  "es": {
+    "home": {
+      "title": "ClipShare - Comparte tus Momentos",
+      "description": "Comparte clips de video y GIFs con el mundo",
+      "getStarted": "Comenzar",
+      "login": "Iniciar Sesión",
+      "popularClips": "Clips Populares",
+      "views": "Vistas",
+      "likes": "Me Gusta",
+      "comments": "Comentarios"
+    },
+    "auth": {
+      "register": "Crear Cuenta",
+      "login": "Iniciar Sesión",
+      "logout": "Cerrar Sesión",
+      "email": "Correo Electrónico",
+      "password": "Contraseña",
+      "name": "Nombre",
+      "loginSuccess": "¡Sesión iniciada exitosamente!",
+      "registerSuccess": "¡Cuenta creada exitosamente!",
+      "invalidCredentials": "Correo o contraseña inválidos",
+      "passwordPolicy": "Mín 8 caracteres, mayúscula, minúscula, número, carácter especial"
+    },
+    "upload": {
+      "title": "Sube tu Clip",
+      "selectFile": "Selecciona archivo (máx 200MB)",
+      "uploadProgress": "Progreso de carga",
+      "uploading": "Subiendo...",
+      "upload": "Subir Clip",
+      "privacy": "Privacidad",
+      "public": "Público",
+      "private": "Privado"
+    }
+  }
+}
